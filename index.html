@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seguimiento de Proyectos - Escuela Secundaria Técnica No. 150</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React y ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel para JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Estilos personalizados -->
+    <link rel="stylesheet" href="index.css">
+    
+    <!-- Configuración de Tailwind -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#10B981',
+                        accent: '#8B5CF6',
+                        dark: '#1F2937',
+                        light: '#F9FAFB'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // Datos iniciales
+        const Status = {
+            PLANIFICADO: 'Planificado',
+            EN_PROGRESO: 'En Progreso',
+            COMPLETADO: 'Completado',
+            CANCELADO: 'Cancelado'
+        };
+
+        const Teachers = [
+            'Juan Pérez', 'María García', 'Carlos Rodríguez', 'Ana Martínez',
+            'Luis González', 'Sofía López', 'Diego Hernández', 'Valentina Díaz'
+        ];
+
+        const Disciplines = [
+            'Matemáticas', 'Ciencias', 'Lenguaje', 'Historia', 'Geografía',
+            'Artes', 'Educación Física', 'Tecnología', 'Inglés'
+        ];
+
+        const Grades = ['1°', '2°', '3°', '4°', '5°', '6°'];
+        const Groups = ['A', 'B', 'C', 'D'];
+
+        // Componente principal
+        function App() {
+            const [projects, setProjects] = React.useState([]);
+            const [showForm, setShowForm] = React.useState(false);
+            const [editingProject, setEditingProject] = React.useState(null);
+            const [filter, setFilter] = React.useState({
+                discipline: 'Todas',
+                grade: 'Todos',
+                group: 'Todos',
+                status: 'Todos'
+            });
+
+            // Cargar proyectos desde localStorage
+            React.useEffect(() => {
+                const savedProjects = localStorage.getItem('schoolProjects');
+                if (savedProjects) {
+                    setProjects(JSON.parse(savedProjects));
+                } else {
+                    // Proyectos de ejemplo
+                    const sampleProjects = [
+                        {
+                            id: '1',
+                            title: 'Proyecto de Ciencias: Sistema Solar',
+                            description: 'Los estudiantes crearán un modelo del sistema solar y presentarán sus características principales.',
+                            discipline: 'Ciencias',
+                            grade: '4°',
+                            group: 'A',
+                            teacher: 'María García',
+                            status: Status.EN_PROGRESO,
+                            date: '2024-01-15'
+                        },
+                        {
+                            id: '2',
+                            title: 'Exposición de Matemáticas',
+                            description: 'Presentación de problemas matemáticos resueltos de forma creativa.',
+                            discipline: 'Matemáticas',
+                            grade: '5°',
+                            group: 'B',
+                            teacher: 'Juan Pérez',
+                            status: Status.PLANIFICADO,
+                            date: '2024-01-20'
+                        }
+                    ];
+                    setProjects(sampleProjects);
+                }
+            }, []);
+
+            // Guardar proyectos en localStorage
+            React.useEffect(() => {
+                localStorage.setItem('schoolProjects', JSON.stringify(projects));
+            }, [projects]);
+
+            const handleSaveProject = (projectData) => {
+                if (editingProject) {
+                    setProjects(projects.map(p => 
+                        p.id === editingProject.id 
+                            ? { ...projectData, id: editingProject.id }
+                            : p
+                    ));
+                } else {
+                    const newProject = {
+                        ...projectData,
+                        id: Date.now().toString()
+                    };
+                    setProjects([...projects, newProject]);
+                }
+                setShowForm(false);
+                setEditingProject(null);
+            };
+
+            const handleDeleteProject = (id) => {
+                if (confirm('¿Estás seguro de que quieres eliminar este proyecto?')) {
+                    setProjects(projects.filter(p => p.id !== id));
+                }
+            };
+
+            const handleEditProject = (project) => {
+                setEditingProject(project);
+                setShowForm(true);
+            };
+
+            const filteredProjects = projects.filter(project => {
+                return (
+                    (filter.discipline === 'Todas' || project.discipline === filter.discipline) &&
+                    (filter.grade === 'Todos' || project.grade === filter.grade) &&
+                    (filter.group === 'Todos' || project.group === filter.group) &&
+                    (filter.status === 'Todos' || project.status === filter.status)
+                );
+            });
+
+            if (showForm) {
+                return (
+                    <div className="min-h-screen bg-gray-50">
+                        <ProjectForm
+                            project={editingProject}
+                            onSave={handleSaveProject}
+                            onCancel={() => {
+                                setShowForm(false);
+                                setEditingProject(null);
+                            }}
+                        />
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen bg-gray-50">
+                    {/* Header */}
+                    <header className="bg-gradient-to-r from-blue-600 to-blue-800 text-white shadow-lg">
+                        <div className="container mx-auto px-4 py-6">
+                            <div className="text-center">
+                                <h1 className="text-3xl md:text-4xl font-bold mb-2">
+                                    <i className="fas fa-graduation-cap mr-3"></i>
+                                    Seguimiento de Proyectos
+                                </h1>
+                                <p className="text-blue-100 text-lg">
+                                    Escuela Secundaria Técnica No. 150
+                                </p>
+                            </div>
+                        </div>
+                    </header>
+
+                    <div className="container mx-auto px-4 py-8">
+                        {/* Estadísticas */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                            <div className="bg-white rounded-lg shadow-md p-6 text-center">
+                                <div className="text-3xl font-bold text-gray-800 mb-2">
+                                    {projects.length}
+                                </div>
+                                <div className="text-gray-600">Total Proyectos</div>
+                            </div>
+                            <div className="bg-blue-100 rounded-lg shadow-md p-6 text-center">
+                                <div className="text-3xl font-bold text-blue-800 mb-2">
+                                    {projects.filter(p => p.status === Status.EN_PROGRESO).length}
+                                </div>
+                                <div className="text-blue-600">En Progreso</div>
+                            </div>
+                            <div className="bg-green-100 rounded-lg shadow-md p-6 text-center">
+                                <div className="text-3xl font-bold text-green-800 mb-2">
+                                    {projects.filter(p => p.status === Status.COMPLETADO).length}
+                                </div>
+                                <div className="text-green-600">Completados</div>
+                            </div>
+                        </div>
+
+                        {/* Botón Nuevo Proyecto */}
+                        <div className="text-center mb-8">
+                            <button
+                                onClick={() => setShowForm(true)}
+                                className="bg-primary hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transform hover:scale-105 transition-all duration-200"
+                            >
+                                <i className="fas fa-plus mr-2"></i>
+                                Nuevo Proyecto
+                            </button>
+                        </div>
+
+                        {/* Filtros */}
+                        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+                            <h3 className="text-lg font-semibold mb-4 text-gray-800">
+                                <i className="fas fa-filter mr-2"></i>
+                                Filtros
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <select
+                                    value={filter.discipline}
+                                    onChange={(e) => setFilter({...filter, discipline: e.target.value})}
+                                    className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                                >
+                                    <option value="Todas">Todas las Disciplinas</option>
+                                    {Disciplines.map(discipline => (
+                                        <option key={discipline} value={discipline}>{discipline}</option>
+                                    ))}
+                                </select>
+                                <select
+                                    value={filter.grade}
+                                    onChange={(e) => setFilter({...filter, grade: e.target.value})}
+                                    className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                                >
+                                    <option value="Todos">Todos los Grados</option>
+                                    {Grades.map(grade => (
+                                        <option key={grade} value={grade}>{grade}</option>
+                                    ))}
+                                </select>
+                                <select
+                                    value={filter.group}
+                                    onChange={(e) => setFilter({...filter, group: e.target.value})}
+                                    className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                                >
+                                    <option value="Todos">Todos los Grupos</option>
+                                    {Groups.map(group => (
+                                        <option key={group} value={group}>{group}</option>
+                                    ))}
+                                </select>
+                                <select
+                                    value={filter.status}
+                                    onChange={(e) => setFilter({...filter, status: e.target.value})}
+                                    className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                                >
+                                    <option value="Todos">Todos los Estados</option>
+                                    {Object.values(Status).map(status => (
+                                        <option key={status} value={status}>{status}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Lista de Proyectos */}
+                        <div className="space-y-6">
+                            {filteredProjects.length === 0 ? (
+                                <div className="text-center py-12">
+                                    <i className="fas fa-folder-open text-6xl text-gray-300 mb-4"></i>
+                                    <h3 className="text-xl font-semibold text-gray-600 mb-2">
+                                        No hay proyectos aún
+                                    </h3>
+                                    <p className="text-gray-500">
+                                        Crea tu primer proyecto haciendo clic en "Nuevo Proyecto"
+                                    </p>
+                                </div>
+                            ) : (
+                                filteredProjects.map(project => (
+                                    <ProjectCard
+                                        key={project.id}
+                                        project={project}
+                                        onEdit={handleEditProject}
+                                        onDelete={handleDeleteProject}
+                                    />
+                                ))
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // Componente de Tarjeta de Proyecto
+        function ProjectCard({ project, onEdit, onDelete }) {
+            const getStatusColor = (status) => {
+                switch (status) {
+                    case Status.PLANIFICADO: return 'bg-gray-500';
+                    case Status.EN_PROGRESO: return 'bg-blue-500';
+                    case Status.COMPLETADO: return 'bg-green-500';
+                    case Status.CANCELADO: return 'bg-red-500';
+                    default: return 'bg-gray-500';
+                }
+            };
+
+            const getStatusIcon = (status) => {
+                switch (status) {
+                    case Status.PLANIFICADO: return 'fa-calendar';
+                    case Status.EN_PROGRESO: return 'fa-spinner';
+                    case Status.COMPLETADO: return 'fa-check-circle';
+                    case Status.CANCELADO: return 'fa-times-circle';
+                    default: return 'fa-circle';
+                }
+            };
+
+            return (
+                <div className="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
+                    <div className="p-6">
+                        <div className="flex justify-between items-start mb-4">
+                            <h3 className="text-xl font-bold text-gray-800 flex-1 mr-4">
+                                {project.title}
+                            </h3>
+                            <span className={`${getStatusColor(project.status)} text-white px-3 py-1 rounded-full text-sm font-semibold flex items-center`}>
+                                <i className={`fas ${getStatusIcon(project.status)} mr-2`}></i>
+                                {project.status}
+                            </span>
+                        </div>
+                        
+                        <p className="text-gray-600 mb-4 leading-relaxed">
+                            {project.description}
+                        </p>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6 text-sm">
+                            <div className="flex items-center text-gray-700">
+                                <i className="fas fa-book text-blue-500 mr-3 w-4 text-center"></i>
+                                <span className="font-medium">{project.discipline}</span>
+                            </div>
+                            <div className="flex items-center text-gray-700">
+                                <i className="fas fa-graduation-cap text-green-500 mr-3 w-4 text-center"></i>
+                                <span className="font-medium">{project.grade} {project.group}</span>
+                            </div>
+                            <div className="flex items-center text-gray-700">
+                                <i className="fas fa-chalkboard-teacher text-purple-500 mr-3 w-4 text-center"></i>
+                                <span className="font-medium">{project.teacher}</span>
+                            </div>
+                            <div className="flex items-center text-gray-700">
+                                <i className="fas fa-calendar-alt text-orange-500 mr-3 w-4 text-center"></i>
+                                <span className="font-medium">{project.date}</span>
+                            </div>
+                        </div>
+                        
+                        <div className="flex space-x-3">
+                            <button
+                                onClick={() => onEdit(project)}
+                                className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center"
+                            >
+                                <i className="fas fa-edit mr-2"></i>
+                                Editar
+                            </button>
+                            <button
+                                onClick={() => onDelete(project.id)}
+                                className="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center"
+                            >
+                                <i className="fas fa-trash mr-2"></i>
+                                Eliminar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // Componente de Formulario
+        function ProjectForm({ project, onSave, onCancel }) {
+            const [formData, setFormData] = React.useState({
+                title: project?.title || '',
+                description: project?.description || '',
+                discipline: project?.discipline || Disciplines[0],
+                grade: project?.grade || Grades[0],
+                group: project?.group || Groups[0],
+                teacher: project?.teacher || Teachers[0],
+                status: project?.status || Status.PLANIFICADO,
+                date: project?.date || new Date().toISOString().split('T')[0]
+            });
+
+            const handleSave = (e) => {
+                e.preventDefault();
+                if (!formData.title.trim() || !formData.description.trim()) {
+                    alert('Por favor completa todos los campos requeridos');
+                    return;
+                }
+                onSave(formData);
+            };
+
+            return (
+                <div className="min-h-screen bg-gray-50 py-8">
+                    <div className="container mx-auto px-4 max-w-2xl">
+                        <div className="bg-white rounded-lg shadow-xl p-8">
+                            <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">
+                                <i className="fas fa-folder-plus mr-3 text-blue-500"></i>
+                                {project ? 'Editar Proyecto' : 'Nuevo Proyecto'}
+                            </h2>
+                            
+                            <form onSubmit={handleSave} className="space-y-6">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                        Título del Proyecto *
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formData.title}
+                                        onChange={(e) => setFormData({...formData, title: e.target.value})}
+                                        className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                        placeholder="Ej: Proyecto de Ciencias del Medio Ambiente"
+                                        required
+                                    />
+                                </div>
+                                
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                        Descripción *
+                                    </label>
+                                    <textarea
+                                        value={formData.description}
+                                        onChange={(e) => setFormData({...formData, description: e.target.value})}
+                                        className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent h-32 resize-none"
+                                        placeholder="Describe los objetivos, actividades y resultados esperados del proyecto..."
+                                        required
+                                    />
+                                </div>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                            Disciplina
+                                        </label>
+                                        <select
+                                            value={formData.discipline}
+                                            onChange={(e) => setFormData({...formData, discipline: e.target.value})}
+                                            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                        >
+                                            {Disciplines.map(discipline => (
+                                                <option key={discipline} value={discipline}>{discipline}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                            Profesor
+                                        </label>
+                                        <select
+                                            value={formData.teacher}
+                                            onChange={(e) => setFormData({...formData, teacher: e.target.value})}
+                                            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                        >
+                                            {Teachers.map(teacher => (
+                                                <option key={teacher} value={teacher}>{teacher}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                            Grado
+                                        </label>
+                                        <select
+                                            value={formData.grade}
+                                            onChange={(e) => setFormData({...formData, grade: e.target.value})}
+                                            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                        >
+                                            {Grades.map(grade => (
+                                                <option key={grade} value={grade}>{grade}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                            Grupo
+                                        </label>
+                                        <select
+                                            value={formData.group}
+                                            onChange={(e) => setFormData({...formData, group: e.target.value})}
+                                            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                        >
+                                            {Groups.map(group => (
+                                                <option key={group} value={group}>{group}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                            Estado
+                                        </label>
+                                        <select
+                                            value={formData.status}
+                                            onChange={(e) => setFormData({...formData, status: e.target.value})}
+                                            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                        >
+                                            {Object.values(Status).map(status => (
+                                                <option key={status} value={status}>{status}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                        Fecha de Inicio
+                                    </label>
+                                    <input
+                                        type="date"
+                                        value={formData.date}
+                                        onChange={(e) => setFormData({...formData, date: e.target.value})}
+                                        className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                    />
+                                </div>
+                                
+                                <div className="flex space-x-4 pt-6">
+                                    <button
+                                        type="submit"
+                                        className="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center"
+                                    >
+                                        <i className="fas fa-save mr-2"></i>
+                                        Guardar Proyecto
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={onCancel}
+                                        className="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center"
+                                    >
+                                        <i className="fas fa-times mr-2"></i>
+                                        Cancelar
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // Renderizar la aplicación
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

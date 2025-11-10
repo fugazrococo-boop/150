@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Seguimiento de Proyectos - Escuela Secundaria Técnica No. 150</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/index.css">
+    <style>
+        /* Estilos de respaldo mientras carga */
+        .loading { 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        .error { 
+            color: #dc2626; 
+            text-align: center; 
+            padding: 2rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="root">
+        <div class="loading">
+            <div class="text-center">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+                <p class="text-gray-600">Cargando aplicación...</p>
+            </div>
+        </div>
+    </div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "react": "https://esm.sh/react@19.2.0",
+            "react-dom": "https://esm.sh/react-dom@19.2.0",
+            "react-dom/client": "https://esm.sh/react-dom@19.2.0/client"
+        }
+    }
+    </script>
+
+    <script type="module">
+        // Sistema de carga con manejo de errores
+        async function initializeApp() {
+            const rootElement = document.getElementById('root');
+            
+            try {
+                console.log('🚀 Iniciando aplicación...');
+                
+                // Importar React y ReactDOM
+                const React = await import('react');
+                const ReactDOM = await import('react-dom/client');
+                
+                console.log('✅ React cargado:', React.version);
+                
+                // Crear componente básico funcional
+                function App() {
+                    const [projects, setProjects] = React.useState([]);
+                    const [searchTerm, setSearchTerm] = React.useState('');
+                    const [statusFilter, setStatusFilter] = React.useState('all');
+                    
+                    // Cargar proyectos desde localStorage
+                    React.useEffect(() => {
+                        try {
+                            const saved = localStorage.getItem('projects');
+                            if (saved) {
+                                setProjects(JSON.parse(saved));
+                            }
+                        } catch (error) {
+                            console.warn('No se pudieron cargar proyectos:', error);
+                        }
+                    }, []);
+                    
+                    // Guardar proyectos en localStorage
+                    React.useEffect(() => {
+                        try {
+                            localStorage.setItem('projects', JSON.stringify(projects));
+                        } catch (error) {
+                            console.warn('No se pudieron guardar proyectos:', error);
+                        }
+                    }, [projects]);
+                    
+                    const addProject = (project) => {
+                        setProjects(prev => [...prev, {
+                            ...project,
+                            id: Date.now().toString(),
+                            status: 'InProgress',
+                            lastUpdated: new Date().toISOString()
+                        }]);
+                    };
+                    
+                    const filteredProjects = projects.filter(project => {
+                        const matchesSearch = project.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                             project.teacher?.toLowerCase().includes(searchTerm.toLowerCase());
+                        const matchesStatus = statusFilter === 'all' || project.status === statusFilter;
+                        return matchesSearch && matchesStatus;
+                    });
+                    
+                    return React.createElement('div', { className: 'min-h-screen bg-gray-50' },
+                        // Header
+                        React.createElement('header', { className: 'bg-white shadow-sm border-b' },
+                            React.createElement('div', { className: 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8' },
+                                React.createElement('div', { className: 'flex justify-between items-center h-16' },
+                                    React.createElement('h1', { className: 'text-xl font-semibold text-gray-900' },
+                                        'Seguimiento de Proyectos - Escuela Secundaria Técnica No. 150'
+                                    ),
+                                    React.createElement('button', {
+                                        onClick: () => {
+                                            const name = prompt('Nombre del proyecto:');
+                                            const teacher = prompt('Docente:');
+                                            const description = prompt('Descripción:');
+                                            if (name && teacher) {
+                                                addProject({ name, teacher, description });
+                                            }
+                                        },
+                                        className: 'bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700'
+                                    }, 'Nuevo Proyecto')
+                                )
+                            )
+                        ),
+                        // Main content
+                        React.createElement('main', { className: 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8' },
+                            // Search and filter
+                            React.createElement('div', { className: 'flex flex-col sm:flex-row gap-4 mb-6' },
+                                React.createElement('input', {
+                                    type: 'text',
+                                    placeholder: 'Buscar proyectos...',
+                                    value: searchTerm,
+                                    onChange: (e) => setSearchTerm(e.target.value),
+                                    className: 'flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent'
+                                }),
+                                React.createElement('select', {
+                                    value: statusFilter,
+                                    onChange: (e) => setStatusFilter(e.target.value),
+                                    className: 'px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent'
+                                },
+                                    React.createElement('option', { value: 'all' }, 'Todos los estados'),
+                                    React.createElement('option', { value: 'InProgress' }, 'En Proceso'),
+                                    React.createElement('option', { value: 'Completed' }, 'Completado')
+                                )
+                            ),
+                            // Projects list
+                            React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' },
+                                filteredProjects.length === 0 
+                                    ? React.createElement('div', { className: 'col-span-full text-center py-12' },
+                                        React.createElement('p', { className: 'text-gray-500' }, 
+                                            projects.length === 0 
+                                                ? 'No hay proyectos. Crea el primero haciendo clic en "Nuevo Proyecto".'
+                                                : 'No se encontraron proyectos que coincidan con tu búsqueda.'
+                                        )
+                                      )
+                                    : filteredProjects.map(project =>
+                                        React.createElement('div', { 
+                                            key: project.id, 
+                                            className: 'bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow'
+                                        },
+                                            React.createElement('h3', { className: 'text-lg font-semibold mb-2 text-gray-900' }, project.name),
+                                            React.createElement('p', { className: 'text-gray-600 mb-3' }, project.description || 'Sin descripción'),
+                                            React.createElement('div', { className: 'flex justify-between items-center text-sm' },
+                                                React.createElement('span', { className: 'text-gray-500' }, project.teacher),
+                                                React.createElement('span', { 
+                                                    className: `px-2 py-1 rounded-full text-xs font-medium ${
+                                                        project.status === 'Completed' 
+                                                            ? 'bg-green-100 text-green-800' 
+                                                            : 'bg-yellow-100 text-yellow-800'
+                                                    }`
+                                                }, project.status === 'Completed' ? 'Completado' : 'En Proceso')
+                                            ),
+                                            React.createElement('div', { className: 'mt-4 flex space-x-2' },
+                                                React.createElement('button', {
+                                                    onClick: () => {
+                                                        const newName = prompt('Nuevo nombre:', project.name);
+                                                        const newTeacher = prompt('Nuevo docente:', project.teacher);
+                                                        const newDescription = prompt('Nueva descripción:', project.description);
+                                                        if (newName || newTeacher || newDescription) {
+                                                            setProjects(prev => prev.map(p => 
+                                                                p.id === project.id 
+                                                                    ? { ...p, name: newName || p.name, teacher: newTeacher || p.teacher, description: newDescription || p.description }
+                                                                    : p
+                                                            ));
+                                                        }
+                                                    },
+                                                    className: 'text-primary-600 hover:text-primary-800 text-sm'
+                                                }, 'Editar'),
+                                                React.createElement('button', {
+                                                    onClick: () => {
+                                                        if (confirm('¿Estás seguro de que quieres eliminar este proyecto?')) {
+                                                            setProjects(prev => prev.filter(p => p.id !== project.id));
+                                                        }
+                                                    },
+                                                    className: 'text-red-600 hover:text-red-800 text-sm'
+                                                }, 'Eliminar')
+                                            )
+                                        )
+                                      )
+                            )
+                        )
+                    );
+                }
+                
+                console.log('📦 Renderizando aplicación...');
+                
+                // Renderizar la aplicación
+                const root = ReactDOM.createRoot(rootElement);
+                root.render(
+                    React.createElement(React.StrictMode, null,
+                        React.createElement(App)
+                    )
+                );
+                
+                console.log('✅ Aplicación cargada exitosamente');
+                
+            } catch (error) {
+                console.error('❌ Error al cargar la aplicación:', error);
+                
+                // Mostrar error al usuario
+                rootElement.innerHTML = `
+                    <div class="min-h-screen flex items-center justify-center">
+                        <div class="error">
+                            <h1 class="text-2xl font-bold mb-4">Error al cargar la aplicación</h1>
+                            <div class="bg-red-50 border border-red-200 rounded p-4 mb-4">
+                                <p class="text-red-800 font-medium">Detalles del error:</p>
+                                <p class="text-red-600 text-sm mt-2">${error.message}</p>
+                            </div>
+                            <p class="text-gray-600 mb-4">Por favor verifica:</p>
+                            <ul class="text-left text-sm text-gray-600 space-y-1">
+                                <li>• Tu conexión a internet</li>
+                                <li>• Que los bloqueadores de scripts estén desactivados</li>
+                                <li>• La consola del navegador (F12) para más detalles</li>
+                            </ul>
+                            <button onclick="window.location.reload()" class="mt-4 bg-primary-600 text-white px-4 py-2 rounded hover:bg-primary-700">
+                                Intentar de nuevo
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        // Inicializar cuando el DOM esté listo
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeApp);
+        } else {
+            initializeApp();
+        }
+    </script>
+</body>
+</html>
